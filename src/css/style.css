@@ -3,6 +3,9 @@ body {
     background-color: #050505;
     color: #e5e5e5;
     -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none; /* Safari */
+    -ms-user-select: none;     /* IE 10+ */
+    user-select: none;         /* Стандарт (Chrome, Firefox, Opera) */
 }
 
 .font-display { font-family: 'Space Grotesk', sans-serif; }
