@@ -15,6 +15,9 @@
     <!-- Шрифты Google: Inter (для текста) и Space Grotesk (для крутых больших цифр) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
 
+    <!-- Подключаем manifest.json -->
+    <link rel="manifest" href="/manifest.json">
+
     <style>
         /* БАЗОВЫЕ СТИЛИ */
         body {
@@ -618,5 +621,15 @@
         init();
 
     </script>
+    <script>
+        //server worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker зарегистрирован!', reg))
+                .catch(err => console.log('Ошибка регистрации SW:', err));
+            });
+        }
+</script>
 </body>
 </html>
