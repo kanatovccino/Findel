@@ -13,6 +13,9 @@ self.addEventListener('install', async (event) => {
 
 // Работа с запросами: сначала смотрим в кэш
 self.addEventListener('fetch', (event) => {
+  // Игнорируем запросы от расширений Chrome (chrome-extension://)
+  if (!(event.request.url.indexOf('http') === 0)) return; 
+
   const req = event.request;
   event.respondWith(networkFirst(req));
 });
