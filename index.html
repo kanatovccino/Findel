@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <!-- Блокируем зум двумя пальцами, чтобы приложение ощущалось как нативное -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Findel</title>
+    
+    <!-- Подключаем Tailwind CSS для быстрой верстки классами -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Иконки FontAwesome (бургер, мотоцикл и т.д.) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Шрифты Google: Inter (для текста) и Space Grotesk (для крутых больших цифр) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* БАЗОВЫЕ СТИЛИ */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #050505; /* Глубокий черный фон для AMOLED */
+            color: #e5e5e5;
+            -webkit-tap-highlight-color: transparent; /* Убирает ублюдский синий квадрат при клике на Android */
+        }
+        
+        .font-display { font-family: 'Space Grotesk', sans-serif; }
+
+        /* Убираем дефолтные стрелки вверх/вниз у полей ввода чисел */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+            -webkit-appearance: none; margin: 0; 
+        }
+
+        /* --- КАСТОМНЫЕ АНИМАЦИИ --- */
+        
+        /* Анимация переливания для "Легендарного" заработка (>2500 тг/ч) */
+        @keyframes shine {
+            0% { background-position: 200% center; }
+            100% { background-position: -200% center; }
+        }
+        .legendary-text {
+            /* Градиент, который будет двигаться */
+            background: linear-gradient(to right, #a855f7 20%, #f472b6 40%, #a855f7 60%, #3b82f6 80%);
+            background-size: 200% auto;
+            color: #000;
+            background-clip: text;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shine 3s linear infinite;
+            text-shadow: 0 0 10px rgba(168, 85, 247, 0.3);
+        }
+
+        /* Прячем скроллбар, чтобы было красиво, но скролл работал */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Эффект легкого вдавливания кнопок при нажатии */
+        .tap-effect:active { transform: scale(0.96); transition: transform 0.1s; }
+        
+        /* Плавное появление экранов при переключении вкладок */
+        .fade-in { animation: fadeIn 0.2s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="h-screen w-full overflow-x-hidden flex flex-col relative mx-auto max-w-md bg-black">
+
+    <!-- === ШАПКА (HEADER) === -->
+    <header class="px-5 pt-8 pb-4 flex justify-between items-center bg-black/50 backdrop-blur-md z-10 w-full">
+        <div class="flex items-center gap-2">
+            <div class="w-3 h-3 rounded-full bg-orange-500"></div>
+            <h1 class="font-display font-bold text-xl tracking-wide text-white">FINDEL</h1>
+        </div>
+        <div id="clock" class="text-sm text-gray-400 font-mono">00:00</div>
+    </header>
+
+    <!-- === ГЛАВНЫЙ КОНТЕЙНЕР ДЛЯ ЭКРАНОВ === -->
+    <main class="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar w-full pb-24" id="app-container">
+        
+        <!-- 1. ЭКРАН: РАБОТА (DELIVERY) -->
+        <section id="section-work" class="h-full flex flex-col px-5 fade-in w-full">
+            
+            <!-- Карточка со статистикой (Спидометр) -->
+            <div class="mt-4 p-5 rounded-3xl bg-neutral-900 border border-neutral-800 text-center shadow-lg relative overflow-hidden shrink-0">
+                <!-- Цветное свечение на фоне (меняется через JS) -->
+                <div id="rate-glow" class="absolute inset-0 opacity-10 blur-xl transition-colors duration-500 bg-yellow-500/0"></div>
+                
+                <div class="relative z-10">
+                    <p class="text-gray-400 text-sm font-medium mb-1">ТЕКУЩИЙ РЕЙТ</p>
+                    <div class="flex items-baseline justify-center gap-1">
+                        <span id="hourly-rate" class="font-display text-6xl font-bold text-white transition-all duration-300">0</span>
+                        <span class="text-xl text-gray-500">₸/ч</span>
+                    </div>
+                    
+                    <div class="mt-6 flex justify-between items-end border-t border-neutral-800 pt-4">
+                        <div class="text-left">
+                            <div class="text-xs text-gray-500 uppercase">Время</div>
+                            <div id="session-timer" class="font-mono text-xl text-white">00:00:00</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-gray-500 uppercase">Заработано</div>
+                            <div class="font-display text-2xl text-green-400 font-bold"><span id="total-earned">0</span> ₸</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Свайпер (Ползунок начала/конца смены) -->
+            <div class="mt-6 w-full shrink-0">
+                <div id="swipe-container" class="relative w-full h-16 bg-white rounded-2xl overflow-hidden shadow-lg flex items-center justify-center transition-colors duration-300">
+                    <div id="swipe-text" class="text-black font-bold text-lg pointer-events-none z-10 transition-colors duration-300">НАЧАТЬ СМЕНУ</div>
+                    <div id="swipe-thumb" class="absolute left-1 top-1 bottom-1 w-14 bg-neutral-900 rounded-xl flex items-center justify-center cursor-pointer z-20 shadow-md">
+                        <i id="swipe-icon" class="fa-solid fa-chevron-right text-white"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Блок ввода заказа (неактивен, пока смена не начата) -->
+            <div id="order-input-area" class="mt-auto mb-6 opacity-50 pointer-events-none transition-opacity duration-300 w-full shrink-0">
+                <label class="block text-gray-400 text-sm mb-2 ml-1">Сумма заказа</label>
+                <div class="flex items-stretch gap-2 w-full">
+                    <input type="number" id="order-amount" placeholder="0" class="flex-1 min-w-0 bg-neutral-800 text-white text-center font-display text-3xl p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-neutral-600 transition-all">
+                    <button class="tap-effect shrink-0 w-16 bg-neutral-800 rounded-2xl text-orange-500 text-2xl border border-neutral-700" onclick="addOrder()">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. ЭКРАН: РАСХОДЫ (SPEND) - скрыт по умолчанию -->
+        <section id="section-spend" class="hidden h-full flex flex-col px-5 fade-in w-full">
+            
+            <!-- Огромный инпут для ввода суммы траты -->
+            <div class="mt-8 mb-6 text-center">
+                <input type="number" id="expense-amount" placeholder="0" class="w-full bg-transparent text-white text-center font-display text-7xl font-bold focus:outline-none placeholder-neutral-800 caret-orange-500" inputmode="numeric">
+                <p class="text-gray-500 text-sm mt-2">введите сумму траты</p>
+            </div>
+
+            <!-- Сетка категорий (Грид 2 колонки) -->
+            <div class="grid grid-cols-2 gap-3 mb-6 shrink-0">
+                <!-- Каждая кнопка при клике вызывает selectCategory, передавая свой ID -->
+                <button onclick="selectCategory('food', this)" class="cat-btn tap-effect p-4 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group hover:border-orange-500/50 transition-colors">
+                    <i class="fa-solid fa-burger text-2xl text-gray-400 group-[.active]:text-orange-400"></i>
+                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-white">Еда</span>
+                </button>
+                <button onclick="selectCategory('bike', this)" class="cat-btn tap-effect p-4 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group hover:border-blue-500/50 transition-colors">
+                    <i class="fa-solid fa-motorcycle text-2xl text-gray-400 group-[.active]:text-blue-400"></i>
+                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-white">Байк</span>
+                </button>
+                <button onclick="selectCategory('family', this)" class="cat-btn tap-effect p-4 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group hover:border-purple-500/50 transition-colors">
+                    <i class="fa-solid fa-house-chimney text-2xl text-gray-400 group-[.active]:text-purple-400"></i>
+                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-white">Дом/Семья</span>
+                </button>
+                <button onclick="selectCategory('credit', this)" class="cat-btn tap-effect p-4 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group hover:border-red-500/50 transition-colors">
+                    <i class="fa-solid fa-file-invoice-dollar text-2xl text-gray-400 group-[.active]:text-red-400"></i>
+                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-white">Кредит</span>
+                </button>
+                <button onclick="selectCategory('other', this)" class="cat-btn tap-effect p-4 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group hover:border-gray-500/50 transition-colors">
+                    <i class="fa-solid fa-ghost text-2xl text-gray-400 group-[.active]:text-gray-200"></i>
+                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-white">Хаос</span>
+                </button>
+                 <button onclick="selectCategory('subs', this)" class="cat-btn tap-effect p-4 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group hover:border-pink-500/50 transition-colors">
+                    <i class="fa-solid fa-wifi text-2xl text-gray-400 group-[.active]:text-pink-400"></i>
+                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-white">Связь</span>
+                </button>
+            </div>
+
+            <!-- Уточнение траты и кнопка сохранения -->
+            <div class="mt-auto pb-4 shrink-0">
+                <input type="text" id="expense-item" placeholder="На что? (например: Молоко)" class="w-full bg-neutral-900 text-white p-4 rounded-xl border border-neutral-800 focus:outline-none focus:border-orange-500 mb-4 text-center">
+                <button onclick="saveExpense()" class="tap-effect w-full py-4 rounded-2xl bg-orange-600 text-white font-bold text-lg shadow-lg shadow-orange-900/20">
+                    ЗАПИСАТЬ ТРАТУ
+                </button>
+            </div>
+        </section>
+
+        <!-- 3. ЭКРАН: СТАТУС И КРЕДИТ (STATUS) - скрыт по умолчанию -->
+        <section id="section-status" class="hidden h-full px-5 fade-in overflow-y-auto pb-20 w-full">
+            <h2 class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4 mt-6">Прогресс Босса</h2>
+            
+            <!-- Месячный босс -->
+            <div class="bg-neutral-900 p-5 rounded-2xl border border-neutral-800 mb-4 relative overflow-hidden">
+                <div class="flex justify-between items-end mb-2 relative z-10">
+                    <span class="text-white font-medium">Платеж (Месяц)</span>
+                    <span class="text-orange-400 font-mono"><span id="month-paid">0</span> / 120 000</span>
+                </div>
+                <!-- Прогресс-бар -->
+                <div class="w-full h-3 bg-neutral-800 rounded-full overflow-hidden relative z-10">
+                    <div id="bar-month" class="h-full bg-orange-500 transition-all duration-1000" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Глобальный босс (Весь долг) -->
+            <div class="bg-neutral-900 p-5 rounded-2xl border border-neutral-800 mb-8 relative overflow-hidden">
+                <div class="flex justify-between items-end mb-2 relative z-10">
+                    <span class="text-white font-medium">Полный долг</span>
+                    <span class="text-red-400 font-mono"><span id="total-paid">0</span> / <span id="total-debt-val">2 000 000</span></span>
+                </div>
+                <!-- Прогресс-бар -->
+                <div class="w-full h-3 bg-neutral-800 rounded-full overflow-hidden relative z-10">
+                    <div id="bar-total" class="h-full bg-red-600 transition-all duration-1000" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <h2 class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">История (Последние 5)</h2>
+            <!-- Сюда JS вставляет последние записи трат -->
+            <div id="history-list" class="space-y-3"></div>
+            
+            <!-- Скрытая кнопка сброса (если нужно обнулить localStorage) -->
+             <button onclick="clearAllData()" class="mt-10 w-full py-3 rounded-xl border border-red-900/30 text-red-700 text-xs uppercase tracking-widest hover:bg-red-900/10">
+                Сброс данных (Осторожно)
+            </button>
+        </section>
+
+    </main>
+
+    <!-- === НИЖНЯЯ НАВИГАЦИЯ (TABS) === -->
+    <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-[calc(28rem-3rem)] h-16 bg-neutral-900/90 backdrop-blur-xl border border-white/10 rounded-2xl flex justify-around items-center z-50 shadow-2xl">
+        <button onclick="switchTab('work')" id="nav-work" class="nav-btn text-orange-500 flex flex-col items-center gap-1 w-16">
+            <i class="fa-solid fa-bolt text-xl"></i>
+            <span class="text-[10px] font-bold">WORK</span>
+        </button>
+        <button onclick="switchTab('spend')" id="nav-spend" class="nav-btn text-gray-500 flex flex-col items-center gap-1 w-16 transition-colors hover:text-gray-300">
+            <i class="fa-solid fa-wallet text-xl"></i>
+            <span class="text-[10px] font-bold">SPEND</span>
+        </button>
+        <button onclick="switchTab('status')" id="nav-status" class="nav-btn text-gray-500 flex flex-col items-center gap-1 w-16 transition-colors hover:text-gray-300">
+            <i class="fa-solid fa-chart-pie text-xl"></i>
+            <span class="text-[10px] font-bold">STATUS</span>
+        </button>
+    </nav>
+
+    <!-- === ЛОГИКА ПРИЛОЖЕНИЯ (JAVASCRIPT) === -->
+    <script>
+        // --- 1. СОСТОЯНИЕ (STATE) ---
+        // Это "скелет" данных. Если приложение открывается впервые, оно берет эту структуру.
+        const DEFAULT_STATE = {
+            isWorking: false,          // Флаг: идет ли смена сейчас
+            sessionStartTime: null,    // Timestamp начала смены (Date.now())
+            sessionOrders: [],         // Массив текущих заказов { amount: 1500, time: 1234567 }
+            expenses: [],              // Массив всех трат (история)
+            credit: { 
+                totalDebt: 2000000,    // Твоя цель по кредиту
+                monthlyGoal: 120000,   // Цель на месяц
+                monthlyPaid: 0,        // Сколько уже закинул в этом месяце
+                totalPaid: 0           // Сколько закинул за всё время
+            }
+        };
+
+        // Пытаемся достать данные из памяти браузера. Если их нет (null), берем DEFAULT_STATE.
+        let state = JSON.parse(localStorage.getItem('findel_v1')) || DEFAULT_STATE;
+        
+        // Глобальные переменные для работы интерфейса
+        let selectedCategory = null;   // Выбранная категория в расходах
+        let timerInterval = null;      // Переменная для таймера, чтобы его можно было остановить
+
+        // Функция сохранения текущего состояния в память телефона
+        function saveState() {
+            localStorage.setItem('findel_v1', JSON.stringify(state));
+        }
+
+        // --- 2. НАВИГАЦИЯ (Переключение вкладок) ---
+        function switchTab(tabId) {
+            // 1. Прячем все секции и делаем все иконки серыми
+            ['work', 'spend', 'status'].forEach(id => {
+                document.getElementById(`section-${id}`).classList.add('hidden');
+                document.getElementById(`nav-${id}`).classList.remove('text-orange-500', 'text-white');
+                document.getElementById(`nav-${id}`).classList.add('text-gray-500');
+            });
+
+            // 2. Показываем нужную секцию и красим её иконку в оранжевый
+            document.getElementById(`section-${tabId}`).classList.remove('hidden');
+            document.getElementById(`nav-${tabId}`).classList.remove('text-gray-500');
+            document.getElementById(`nav-${tabId}`).classList.add('text-orange-500');
+
+            // 3. Если перешли на вкладку "Статус", принудительно обновляем прогресс-бары
+            if(tabId === 'status') updateStatusView();
+        }
+
+        // --- 3. ЛОГИКА СВАЙПА (Ползунок начала смены) ---
+        function initSwipe() {
+            const container = document.getElementById('swipe-container');
+            const thumb = document.getElementById('swipe-thumb');
+            let isDragging = false;
+            let startX = 0;
+            let currentX = 0;
+
+            // Начало касания/клика
+            const startDrag = (e) => {
+                isDragging = true;
+                // Определяем, мышь это или палец
+                startX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                thumb.style.transition = 'none'; // Убираем плавность во время таскания
+            };
+
+            // Движение
+            const drag = (e) => {
+                if (!isDragging) return;
+                let clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+                let maxDrag = container.offsetWidth - thumb.offsetWidth - 8; // Предел движения
+                
+                currentX = clientX - startX;
+                if (currentX < 0) currentX = 0; // Не даем уйти влево
+                if (currentX > maxDrag) currentX = maxDrag; // Не даем уйти вправо за границы
+                
+                thumb.style.transform = `translateX(${currentX}px)`;
+            };
+
+            // Отпускание пальца/кнопки мыши
+            const endDrag = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                let maxDrag = container.offsetWidth - thumb.offsetWidth - 8;
+                thumb.style.transition = 'transform 0.3s ease'; // Возвращаем плавность
+                
+                // Если дотянули больше чем на 80% ширины - срабатывает триггер
+                if (currentX > maxDrag * 0.8) {
+                    toggleSession(); // Запускаем или останавливаем смену
+                }
+                
+                // Возвращаем ползунок обратно на старт
+                currentX = 0;
+                thumb.style.transform = `translateX(0px)`;
+            };
+
+            // Вешаем слушатели событий (для компа и телефона)
+            thumb.addEventListener('mousedown', startDrag);
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('mouseup', endDrag);
+
+            thumb.addEventListener('touchstart', startDrag, {passive: true});
+            document.addEventListener('touchmove', drag, {passive: true});
+            document.addEventListener('touchend', endDrag);
+            
+            updateSwipeUI(); // Обновляем внешний вид ползунка при загрузке
+        }
+
+        // Меняет цвета свайпа (красный - закончить, белый - начать)
+        function updateSwipeUI() {
+            const container = document.getElementById('swipe-container');
+            const text = document.getElementById('swipe-text');
+            const icon = document.getElementById('swipe-icon');
+
+            if (state.isWorking) {
+                container.classList.replace('bg-white', 'bg-red-600');
+                text.innerText = "ЗАКОНЧИТЬ СМЕНУ";
+                text.classList.replace('text-black', 'text-white');
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-stop');
+            } else {
+                container.classList.replace('bg-red-600', 'bg-white');
+                text.innerText = "НАЧАТЬ СМЕНУ";
+                text.classList.replace('text-white', 'text-black');
+                icon.classList.remove('fa-stop');
+                icon.classList.add('fa-chevron-right');
+            }
+        }
+
+        // --- 4. ЛОГИКА РАБОТЫ (DELIVERY) ---
+        
+        // Вкл/Выкл смену
+        function toggleSession() {
+            const inputArea = document.getElementById('order-input-area');
+            
+            if (!state.isWorking) {
+                // НАЧИНАЕМ
+                state.isWorking = true;
+                state.sessionStartTime = Date.now();
+                state.sessionOrders = []; // Очищаем заказы с прошлой смены
+                inputArea.classList.remove('opacity-50', 'pointer-events-none'); // Включаем блок ввода
+                startTimer();
+                if (navigator.vibrate) navigator.vibrate(100); // Виброотклик
+            } else {
+                // ЗАКАНЧИВАЕМ
+                state.isWorking = false;
+                state.sessionStartTime = null;
+                inputArea.classList.add('opacity-50', 'pointer-events-none'); // Выключаем блок ввода
+                stopTimer();
+                updateWorkUI();
+                if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+            }
+            updateSwipeUI();
+            saveState();
+        }
+
+        // Добавление заказа
+        function addOrder() {
+            const input = document.getElementById('order-amount');
+            const amount = parseInt(input.value);
+            
+            if (!amount || amount <= 0) return; // Защита от дурака
+
+            // Пушим заказ в массив сессии
+            state.sessionOrders.push({
+                amount: amount,
+                time: Date.now()
+            });
+            
+            input.value = ''; // Очищаем поле
+            input.focus();    // Оставляем фокус, чтобы клава не скрывалась
+            
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            saveState();
+            updateWorkUI(); // Пересчитываем рейт
+        }
+
+        // Отрисовка статистики (Рейт, Заработок, Цвета)
+        function updateWorkUI() {
+            // Считаем общую сумму всех заказов сессии
+            const totalEarned = state.sessionOrders.reduce((sum, order) => sum + order.amount, 0);
+            document.getElementById('total-earned').innerText = totalEarned;
+
+            let rate = 0;
+            if (state.isWorking && state.sessionStartTime) {
+                // Вычисляем сколько часов прошло
+                const hours = (Date.now() - state.sessionStartTime) / 1000 / 3600;
+                if (hours > 0.01) {  // Защита от деления на ноль в первую секунду
+                    rate = Math.round(totalEarned / hours); // Твой заработок в час
+                }
+            }
+            
+            const rateEl = document.getElementById('hourly-rate');
+            const glowEl = document.getElementById('rate-glow');
+            rateEl.innerText = rate;
+
+            // Сбрасываем все классы цветов
+            rateEl.className = "font-display text-6xl font-bold transition-all duration-300"; 
+            glowEl.className = "absolute inset-0 opacity-20 blur-xl transition-colors duration-500"; 
+
+            // ЛОГИКА ЦВЕТОВ (Мотивация)
+            if (rate < 1600) {
+                rateEl.classList.add('text-yellow-400');
+                glowEl.classList.add('bg-yellow-500');
+            } else if (rate < 2000) {
+                rateEl.classList.add('text-lime-400');
+                glowEl.classList.add('bg-lime-500');
+            } else if (rate < 2500) {
+                rateEl.classList.add('text-green-500');
+                glowEl.classList.add('bg-green-600');
+            } else {
+                rateEl.classList.add('legendary-text'); // Тот самый переливающийся текст
+                glowEl.classList.add('bg-purple-600', 'opacity-40');
+            }
+        }
+
+        // Таймер, который тикает каждую секунду
+        function startTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (!state.isWorking) return;
+                
+                const diff = Date.now() - state.sessionStartTime;
+                // Математика для превращения миллисекунд в Часы:Минуты:Секунды
+                const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                
+                document.getElementById('session-timer').innerText = `${h}:${m}:${s}`;
+                updateWorkUI(); // Раз в секунду обновляем рейт, т.к. время идет, и он падает, если нет заказов
+            }, 1000);
+        }
+        
+        function stopTimer() {
+            clearInterval(timerInterval);
+            document.getElementById('session-timer').innerText = "00:00:00";
+            document.getElementById('hourly-rate').innerText = "0";
+            document.getElementById('total-earned').innerText = "0";
+            // Возвращаем цвета в дефолт
+            document.getElementById('hourly-rate').className = "font-display text-6xl font-bold text-white transition-all duration-300";
+            document.getElementById('rate-glow').className = "absolute inset-0 opacity-10 blur-xl bg-yellow-500/0";
+        }
+
+        // --- 5. ЛОГИКА РАСХОДОВ (SPEND) ---
+        
+        // Выбор категории (подсвечиваем плитку)
+        function selectCategory(catId, btnElement) {
+            selectedCategory = catId;
+            
+            // Сначала убираем подсветку со всех кнопок
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                btn.classList.remove('border-orange-500', 'bg-neutral-800', 'active');
+                btn.querySelector('i').classList.remove('text-orange-400', 'text-blue-400', 'text-purple-400', 'text-red-400', 'text-pink-400', 'text-gray-200');
+                btn.querySelector('i').classList.add('text-gray-400');
+            });
+            
+            // Добавляем подсветку нажатой кнопке
+            btnElement.classList.add('border-orange-500', 'bg-neutral-800', 'active');
+            btnElement.querySelector('i').classList.remove('text-gray-400'); // Цвет иконки подтянется через CSS (group-active)
+        }
+
+        // Сохранение траты
+        function saveExpense() {
+            const amountInput = document.getElementById('expense-amount');
+            const itemInput = document.getElementById('expense-item');
+            
+            const amount = parseInt(amountInput.value);
+            const item = itemInput.value.trim() || "Без названия";
+
+            if (!amount || !selectedCategory) return; // Если не ввели сумму или не выбрали категорию - ничего не делаем
+
+            const expense = {
+                id: Date.now(),
+                date: new Date().toISOString().split('T')[0], // Дата в формате YYYY-MM-DD
+                amount: amount,
+                category: selectedCategory,
+                item: item
+            };
+            
+            // Закидываем трату в начало массива
+            state.expenses.unshift(expense); 
+
+            // Спец. логика для кредита: если трата в категорию Кредит, обновляем прогресс долга
+            if (selectedCategory === 'credit') {
+                state.credit.monthlyPaid += amount;
+                state.credit.totalPaid += amount;
+            }
+
+            saveState(); // Сохраняем в память
+
+            // Очищаем форму
+            amountInput.value = '';
+            itemInput.value = '';
+            selectedCategory = null;
+            document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('border-orange-500', 'bg-neutral-800', 'active'));
+            document.querySelectorAll('.cat-btn i').forEach(i => i.classList.add('text-gray-400'));
+            
+            if (navigator.vibrate) navigator.vibrate([50, 50, 50]);
+        }
+
+        // --- 6. ЛОГИКА СТАТУСА И ИСТОРИИ (STATUS) ---
+        
+        function updateStatusView() {
+            // Вычисляем проценты для прогресс-баров кредита (ограничиваем на 100%)
+            const monthPct = Math.min((state.credit.monthlyPaid / state.credit.monthlyGoal) * 100, 100);
+            const totalPct = Math.min((state.credit.totalPaid / state.credit.totalDebt) * 100, 100);
+
+            // Обновляем текст и ширину полосок
+            document.getElementById('month-paid').innerText = state.credit.monthlyPaid.toLocaleString();
+            document.getElementById('bar-month').style.width = `${monthPct}%`;
+
+            document.getElementById('total-paid').innerText = state.credit.totalPaid.toLocaleString();
+            document.getElementById('total-debt-val').innerText = state.credit.totalDebt.toLocaleString();
+            document.getElementById('bar-total').style.width = `${totalPct}%`;
+
+            // Рендерим последние 5 трат
+            const list = document.getElementById('history-list');
+            list.innerHTML = ''; // Очищаем старый список
+            
+            state.expenses.slice(0, 5).forEach(exp => {
+                const isCredit = exp.category === 'credit';
+                const iconClass = getIconForCat(exp.category);
+                
+                // Вставляем кусок HTML для каждой траты
+                const html = `
+                    <div class="flex justify-between items-center bg-neutral-900/50 p-3 rounded-xl border border-white/5">
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-gray-400">
+                                <i class="${iconClass} text-xs"></i>
+                            </div>
+                            <div>
+                                <div class="text-white text-sm font-medium">${exp.item}</div>
+                                <div class="text-xs text-gray-500 capitalize">${exp.category}</div>
+                            </div>
+                        </div>
+                        <div class="font-display font-bold ${isCredit ? 'text-green-400' : 'text-white'}">
+                            ${isCredit ? '+' : '-'}${exp.amount}
+                        </div>
+                    </div>
+                `;
+                list.innerHTML += html;
+            });
+        }
+
+        // Помощник: Возвращает правильную иконку для категории в истории
+        function getIconForCat(cat) {
+            const map = {
+                'food': 'fa-solid fa-burger',
+                'bike': 'fa-solid fa-motorcycle',
+                'family': 'fa-solid fa-house-chimney',
+                'credit': 'fa-solid fa-file-invoice-dollar',
+                'subs': 'fa-solid fa-wifi',
+                'other': 'fa-solid fa-ghost'
+            };
+            return map[cat] || 'fa-solid fa-circle';
+        }
+
+        // Полный сброс (используется при отладке или если всё зависло)
+        function clearAllData() {
+            if(confirm("Точно удалить все данные? Это необратимо.")) {
+                localStorage.removeItem('findel_v1');
+                location.reload(); // Перезагружает страницу, state возьмет DEFAULT_STATE
+            }
+        }
+
+        // --- 7. ИНИЦИАЛИЗАЦИЯ (Запуск приложения) ---
+        function init() {
+            // Запускаем часы в шапке
+            setInterval(() => {
+                const now = new Date();
+                document.getElementById('clock').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            }, 1000);
+
+            initSwipe(); // Активируем ползунок
+
+            // Если при загрузке state говорит, что мы в процессе работы (например, случайно обновили страницу)
+            if (state.isWorking) {
+                document.getElementById('order-input-area').classList.remove('opacity-50', 'pointer-events-none');
+                startTimer();    // Продолжаем тикать таймер
+                updateWorkUI();  // Пересчитываем рейт на основе старых данных
+            }
+        }
+
+        // Стартуем
+        init();
+
+    </script>
+</body>
+</html>
