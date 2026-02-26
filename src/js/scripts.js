@@ -21,15 +21,17 @@ const COMMISSION = 0.85; // Вычет 15%
 function saveState() {
     localStorage.setItem('findel_v1', JSON.stringify(state));
 }
+
+// --- BOTTOM NAVIGATION настройки ---
 function switchTab(tabId) {
     ['work', 'spend', 'status'].forEach(id => {
         document.getElementById(`section-${id}`).classList.add('hidden');
-        document.getElementById(`nav-${id}`).classList.remove('text-orange-500', 'text-white');
+        document.getElementById(`nav-${id}`).classList.remove('text-green-500', 'text-white');
         document.getElementById(`nav-${id}`).classList.add('text-gray-500');
     });
     document.getElementById(`section-${tabId}`).classList.remove('hidden');
     document.getElementById(`nav-${tabId}`).classList.remove('text-gray-500');
-    document.getElementById(`nav-${tabId}`).classList.add('text-orange-500');
+    document.getElementById(`nav-${tabId}`).classList.add('text-green-500');
     if(tabId === 'status') updateStatusView();
 }
 // --- SWIPE ЛОГИКА ---
@@ -81,15 +83,15 @@ function updateSwipeUI() {
     const text = document.getElementById('swipe-text');
     const icon = document.getElementById('swipe-icon');
     if (state.isWorking) {
-        container.classList.replace('bg-white', 'bg-red-600');
+        // container.classList.replace('bg-white', 'bg-red-600');
         text.innerText = "ЗАКОНЧИТЬ СМЕНУ";
-        text.classList.replace('text-black', 'text-white');
+        // text.classList.replace('text-black', 'text-white');
         icon.classList.remove('fa-chevron-right');
         icon.classList.add('fa-stop');
     } else {
-        container.classList.replace('bg-red-600', 'bg-white');
+        // container.classList.replace('bg-red-600', 'bg-white');
         text.innerText = "НАЧАТЬ СМЕНУ";
-        text.classList.replace('text-white', 'text-black');
+        // text.classList.replace('text-white', 'text-black');
         icon.classList.remove('fa-stop');
         icon.classList.add('fa-chevron-right');
     }
@@ -146,14 +148,14 @@ function updatePauseBtnUI() {
     const btn = document.getElementById('btn-pause');
     if (state.isPaused) {
         btn.innerText = "ПРОДОЛЖИТЬ";
-        btn.classList.replace('bg-neutral-900', 'bg-orange-600/20');
-        btn.classList.replace('text-gray-400', 'text-orange-500');
-        btn.classList.replace('border-neutral-800', 'border-orange-500/50');
+        btn.classList.replace('bg-neutral-900', 'bg-green-600/20');
+        btn.classList.replace('text-gray-400', 'text-green-500');
+        btn.classList.replace('border-neutral-800', 'border-green-500/50');
     } else {
         btn.innerText = "ПАУЗА";
-        btn.classList.replace('bg-orange-600/20', 'bg-neutral-900');
-        btn.classList.replace('text-orange-500', 'text-gray-400');
-        btn.classList.replace('border-orange-500/50', 'border-neutral-800');
+        btn.classList.replace('bg-green-600/20', 'bg-neutral-900');
+        btn.classList.replace('text-green-500', 'text-gray-400');
+        btn.classList.replace('border-green-500/50', 'border-neutral-800');
     }
 }
 function addOrder() {
@@ -309,11 +311,11 @@ function copyExport() {
 function selectCategory(catId, btnElement) {
     selectedCategory = catId;
     document.querySelectorAll('.cat-btn').forEach(btn => {
-        btn.classList.remove('border-orange-500', 'bg-neutral-800', 'active');
-        btn.querySelector('i').classList.remove('text-orange-400', 'text-blue-400', 'text-purple-400', 'text-red-400', 'text-pink-400', 'text-gray-200');
+        btn.classList.remove('border-green-500', 'bg-neutral-800', 'active');
+        btn.querySelector('i').classList.remove('text-green-400', 'text-blue-400', 'text-purple-400', 'text-red-400', 'text-pink-400', 'text-gray-200');
         btn.querySelector('i').classList.add('text-gray-400');
     });
-    btnElement.classList.add('border-orange-500', 'bg-neutral-800', 'active');
+    btnElement.classList.add('border-green-500', 'bg-neutral-800', 'active');
     btnElement.querySelector('i').classList.remove('text-gray-400');
 }
 function saveExpense() {
@@ -340,7 +342,7 @@ function saveExpense() {
     amountInput.value = '';
     itemInput.value = '';
     selectedCategory = null;
-    document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('border-orange-500', 'bg-neutral-800', 'active'));
+    document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('border-green-500', 'bg-neutral-800', 'active'));
     document.querySelectorAll('.cat-btn i').forEach(i => i.classList.add('text-gray-400'));
     
     if (navigator.vibrate) navigator.vibrate([50, 50, 50]);

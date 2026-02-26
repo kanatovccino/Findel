@@ -28,7 +28,7 @@
     <!-- === HEADER === -->
     <header class="px-5 pt-8 pb-4 flex justify-between items-center bg-black/50 backdrop-blur-md z-10 w-full shrink-0">
         <div class="flex items-center gap-2">
-            <div class="w-3 h-3 rounded-full bg-orange-500"></div>
+            <div class="w-3 h-3 rounded-full bg-green-500"></div>
             <h1 class="font-display font-bold text-xl tracking-wide text-white">FINDEL</h1>
         </div>
         <div id="clock" class="text-sm text-gray-400 font-mono">00:00</div>
@@ -65,21 +65,23 @@
 
             <!-- Swipe and Actions -->
             <div class="mt-6 w-full shrink-0 flex flex-col gap-3">
-                <div id="swipe-container" class="relative w-full h-16 bg-white rounded-2xl overflow-hidden shadow-lg flex items-center justify-center transition-colors duration-300">
-                    <div id="swipe-text" class="text-black font-bold text-lg pointer-events-none z-10 transition-colors duration-300">НАЧАТЬ СМЕНУ</div>
-                    <div id="swipe-thumb" class="absolute left-1 top-1 bottom-1 w-14 bg-neutral-900 rounded-xl flex items-center justify-center cursor-pointer z-20 shadow-md">
-                        <i id="swipe-icon" class="fa-solid fa-chevron-right text-white"></i>
-                    </div>
-                </div>
-                
+
                 <!-- Кнопки Паузы и Вывода -->
                 <div id="action-buttons" class="hidden flex gap-3 w-full">
                     <button id="btn-pause" onclick="togglePause()" class="flex-1 tap-effect py-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-gray-400 font-bold text-sm tracking-widest uppercase transition-colors">
                         ПАУЗА
                     </button>
-                    <button onclick="showExport()" class="flex-1 tap-effect py-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-blue-500 font-bold text-sm tracking-widest uppercase transition-colors hover:bg-blue-900/20">
-                        ВЫВОД
+                    <button onclick="showExport()" class="flex-1 tap-effect py-3 rounded-2xl bg-neutral-900 border border-neutral-800 text-grey-500 font-bold text-sm tracking-widest transition-colors hover:bg-blue-900/20">
+                        ВЫВОД.md
                     </button>
+                </div>
+
+                <!-- Ползунок начала смены -->
+                <div id="swipe-container" class="relative w-full h-16 bg-white rounded-2xl overflow-hidden shadow-lg flex items-center justify-center transition-colors duration-300">
+                    <div id="swipe-text" class="text-black font-bold text-lg pointer-events-none z-10 transition-colors duration-300">НАЧАТЬ СМЕНУ</div>
+                    <div id="swipe-thumb" class="absolute left-1 top-1 bottom-1 w-14 bg-neutral-900 rounded-xl flex items-center justify-center cursor-pointer z-20 shadow-md">
+                        <i id="swipe-icon" class="fa-solid fa-chevron-right text-white"></i>
+                    </div>
                 </div>
             </div>
 
@@ -92,8 +94,8 @@
             <div id="order-input-area" class="mt-auto mb-6 opacity-50 pointer-events-none transition-opacity duration-300 w-full shrink-0">
                 <label class="block text-gray-400 text-sm mb-2 ml-1">Сумма заказа</label>
                 <div class="flex items-stretch gap-2 w-full">
-                    <input type="number" id="order-amount" placeholder="0" class="flex-1 min-w-0 bg-neutral-800 text-white text-center font-display text-3xl p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-orange-500 placeholder-neutral-600 transition-all">
-                    <button class="tap-effect shrink-0 w-16 bg-neutral-800 rounded-2xl text-orange-500 text-2xl border border-neutral-700" onclick="addOrder()">
+                    <input type="number" id="order-amount" placeholder="0" class="flex-1 min-w-0 bg-neutral-800 text-white text-center font-display text-3xl p-4 rounded-2xl focus:outline-none focus:ring-2 focus:ring-green-500 placeholder-neutral-600 transition-all">
+                    <button class="tap-effect shrink-0 w-16 bg-neutral-800 rounded-2xl text-green-500 text-2xl border border-neutral-700" onclick="addOrder()">
                         <i class="fa-solid fa-plus"></i>
                     </button>
                 </div>
@@ -103,7 +105,7 @@
         <!-- SECTION: SPEND (FINANCE) -->
         <section id="section-spend" class="hidden h-full flex flex-col px-5 fade-in w-full">
             <div class="mt-8 mb-6 text-center">
-                <input type="number" id="expense-amount" placeholder="0" class="w-full bg-transparent text-white text-center font-display text-7xl font-bold focus:outline-none placeholder-neutral-800 caret-orange-500" inputmode="numeric">
+                <input type="number" id="expense-amount" placeholder="0" class="w-full bg-transparent text-white text-center font-display text-7xl font-bold focus:outline-none placeholder-neutral-800 caret-green-500" inputmode="numeric">
                 <p class="text-gray-500 text-sm mt-2">введите сумму траты</p>
             </div>
 
@@ -136,7 +138,7 @@
 
             <div class="mt-auto pb-4 shrink-0">
                 <input type="text" id="expense-item" placeholder="На что? (например: Молоко)" class="w-full bg-neutral-900 text-white p-4 rounded-xl border border-neutral-800 focus:outline-none focus:border-orange-500 mb-4 text-center">
-                <button onclick="saveExpense()" class="tap-effect w-full py-4 rounded-2xl bg-orange-600 text-white font-bold text-lg shadow-lg shadow-orange-900/20">
+                <button onclick="saveExpense()" class="tap-effect w-full py-4 rounded-2xl bg-green-600 text-white font-bold text-lg shadow-lg shadow-orange-900/20">
                     ЗАПИСАТЬ ТРАТУ
                 </button>
             </div>
@@ -162,7 +164,7 @@
                     <span class="text-red-400 font-mono"><span id="total-paid">0</span> / <span id="total-debt-val">2 000 000</span></span>
                 </div>
                 <div class="w-full h-3 bg-neutral-800 rounded-full overflow-hidden relative z-10">
-                    <div id="bar-total" class="h-full bg-red-600 transition-all duration-1000" style="width: 0%"></div>
+                    <div id="bar-total" class="h-full bg-white-600 transition-all duration-1000" style="width: 0%"></div>
                 </div>
             </div>
 
@@ -194,7 +196,7 @@
 
     <!-- === BOTTOM NAVIGATION === -->
     <nav class="fixed bottom-6 left-1/2 -translate-x-1/2 w-[calc(100%-3rem)] max-w-[calc(28rem-3rem)] h-16 bg-neutral-900/90 backdrop-blur-xl border border-white/10 rounded-2xl flex justify-around items-center z-50 shadow-2xl">
-        <button onclick="switchTab('work')" id="nav-work" class="nav-btn text-orange-500 flex flex-col items-center gap-1 w-16">
+        <button onclick="switchTab('work')" id="nav-work" class="nav-btn text-green-500 flex flex-col items-center gap-1 w-16">
             <i class="fa-solid fa-bolt text-xl"></i>
             <span class="text-[10px] font-bold">WORK</span>
         </button>
