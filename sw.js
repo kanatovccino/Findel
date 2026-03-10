@@ -1,8 +1,12 @@
-const cacheName = 'findel-v1';
+const cacheName = 'findel-v2';
 const staticAssets = [
   './',
   './index.html',
-  './manifest.json'
+  './manifest.json',
+  './src/css/style.css',
+  './src/js/scripts.js',
+  './assets/icons/icon-192.png',
+  './assets/icons/icon-512.png'
 ];
 
 // Установка: кэшируем файлы
