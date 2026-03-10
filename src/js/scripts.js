@@ -4,30 +4,60 @@ const DEFAULT_STATE = {
     isPaused: false,
     totalWorkedMs: 0,
     lastResumeTime: null,
-    targetOrders: null, // Хранит цель по заказам
+    targetOrders: null,
     sessionOrders: [],
     expenses: [],
-    pastSessions: [],
-    credit: { totalDebt: 2000000, monthlyGoal: 120000, monthlyPaid: 0, totalPaid: 0 }
+    pastSessions: []
 };
 
 let state = JSON.parse(localStorage.getItem('findel_v1')) || DEFAULT_STATE;
 
-// Миграция старых данных
 if (state.totalWorkedMs === undefined) state.totalWorkedMs = 0;
 if (state.isPaused === undefined) state.isPaused = false;
 if (state.targetOrders === undefined) state.targetOrders = null;
 if (!state.pastSessions) state.pastSessions = [];
+if (!state.expenses) state.expenses = [];
 if (state.isWorking && !state.lastResumeTime) {
     state.lastResumeTime = state.sessionStartTime || Date.now();
 }
 
 let selectedCategory = null;
 let timerInterval = null;
+let pendingResetType = null;
 const COMMISSION = 0.85;
 
+const CATEGORY_MAP = { 
+    'groceries': { icon: 'fa-basket-shopping', label: 'Продукты' }, 
+    'family': { icon: 'fa-people-roof', label: 'Семья' }, 
+    'courier': { icon: 'fa-box', label: 'Курьерка' }, 
+    'subs': { icon: 'fa-rotate-right', label: 'Подписки' }, 
+    'force_majeure': { icon: 'fa-triangle-exclamation', label: 'Форс-мажор' },
+    'transport': { icon: 'fa-car', label: 'Транспорт' },
+    'charity': { icon: 'fa-cat', label: 'Благотворительность' },
+    'credit': { icon: 'fa-file-invoice-dollar', label: 'Кредит' },
+    'other': { icon: 'fa-ghost', label: 'Хаос' }
+};
+
+// ХЕЛПЕР: сохранение стейта
 function saveState() {
     localStorage.setItem('findel_v1', JSON.stringify(state));
+}
+
+// ХЕЛПЕР: форматирование времени (вместо дублирования кода)
+function formatTime(ms) {
+    const h = Math.floor(ms / 3600000).toString().padStart(2, '0');
+    const m = Math.floor((ms % 3600000) / 60000).toString().padStart(2, '0');
+    const s = Math.floor((ms % 60000) / 1000).toString().padStart(2, '0');
+    return `${h}:${m}:${s}`;
+}
+
+// ХЕЛПЕР: получить актуальные миллисекунды текущей смены
+function getCurrentMs() {
+    let currentMs = state.totalWorkedMs;
+    if (state.isWorking && !state.isPaused && state.lastResumeTime) {
+        currentMs += (Date.now() - state.lastResumeTime);
+    }
+    return currentMs;
 }
 
 function switchTab(tabId) {
@@ -42,6 +72,7 @@ function switchTab(tabId) {
     if(tabId === 'status') updateStatusView();
 }
 
+// === SWIPE LOGIC ===
 function initSwipe() {
     const container = document.getElementById('swipe-container');
     const thumb = document.getElementById('swipe-thumb');
@@ -99,6 +130,7 @@ function updateSwipeUI() {
     }
 }
 
+// === WORK LOGIC ===
 function updatePauseBtnUI() {
     const btn = document.getElementById('btn-pause');
     const icon = document.getElementById('pause-icon');
@@ -143,7 +175,7 @@ function toggleSession() {
         state.totalWorkedMs = 0;
         state.lastResumeTime = Date.now();
         state.sessionOrders = [];
-        state.targetOrders = null; // Обнуляем цель при старте новой смены
+        state.targetOrders = null; 
         
         inputArea.classList.remove('opacity-50', 'pointer-events-none');
         
@@ -155,24 +187,15 @@ function toggleSession() {
         const rawTotal = state.sessionOrders.reduce((sum, order) => sum + order.amount, 0);
         const netTotal = Math.floor(rawTotal * COMMISSION);
         
-        let currentMs = state.totalWorkedMs;
-        if (!state.isPaused && state.lastResumeTime) {
-            currentMs += (Date.now() - state.lastResumeTime);
-        }
+        const currentMs = getCurrentMs();
         const hoursDecimal = currentMs / 1000 / 3600;
         const rate = hoursDecimal > 0.01 ? Math.floor(netTotal / hoursDecimal) : 0;
         
-        const h = Math.floor(currentMs / 3600000).toString().padStart(2, '0');
-        const m = Math.floor((currentMs % 3600000) / 60000).toString().padStart(2, '0');
-        const s = Math.floor((currentMs % 60000) / 1000).toString().padStart(2, '0');
-        const timeStr = `${h}:${m}:${s}`;
-        const dateStr = new Date().toLocaleDateString('ru-RU');
-        
         const sessionRecord = {
             id: Date.now(),
-            date: dateStr,
+            date: new Date().toLocaleDateString('ru-RU'),
             netTotal: netTotal,
-            timeStr: timeStr,
+            timeStr: formatTime(currentMs),
             rate: rate,
             orderCount: state.sessionOrders.length
         };
@@ -181,14 +204,12 @@ function toggleSession() {
             state.pastSessions.push(sessionRecord);
         }
 
-        showSummaryModal(sessionRecord);
-
         state.isWorking = false;
         state.isPaused = false;
         state.totalWorkedMs = 0;
         state.lastResumeTime = null;
         state.sessionOrders = [];
-        state.targetOrders = null; // Обнуляем цель после смены
+        state.targetOrders = null; 
         
         inputArea.classList.add('opacity-50', 'pointer-events-none');
         
@@ -223,15 +244,14 @@ function addOrder() {
 
 function renderSessionOrders() {
     const list = document.getElementById('current-orders-list');
-    list.innerHTML = '';
-    const reversedOrders = [...state.sessionOrders].reverse();
-    reversedOrders.forEach((order, index) => {
+    
+    // Оптимизация: собираем HTML один раз через map().join('')
+    list.innerHTML = [...state.sessionOrders].reverse().map((order, index) => {
         const orderNum = state.sessionOrders.length - index;
-        const date = new Date(order.time);
-        const timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-        
+        const timeStr = new Date(order.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         const netAmount = Math.floor(order.amount * COMMISSION);
-        const html = `
+        
+        return `
             <div class="flex justify-between items-center bg-neutral-900/40 p-3 rounded-xl border border-neutral-800/50">
                 <div class="flex items-center gap-3">
                     <span class="text-neutral-500 font-mono text-xs">#${orderNum}</span>
@@ -240,8 +260,7 @@ function renderSessionOrders() {
                 <span class="text-white font-bold font-display">${netAmount} ₸</span>
             </div>
         `;
-        list.innerHTML += html;
-    });
+    }).join('');
 }
 
 function updateWorkUI() {
@@ -250,14 +269,9 @@ function updateWorkUI() {
     
     document.getElementById('total-earned').innerText = netTotal;
     let rate = 0;
-    let currentMs = 0;
+    
     if (state.isWorking) {
-        currentMs = state.totalWorkedMs;
-        if (!state.isPaused && state.lastResumeTime) {
-            currentMs += (Date.now() - state.lastResumeTime);
-        }
-        
-        const hours = currentMs / 1000 / 3600;
+        const hours = getCurrentMs() / 1000 / 3600;
         if (hours > 0.01) { 
             rate = Math.floor(netTotal / hours);
         }
@@ -280,7 +294,6 @@ function updateWorkUI() {
         glowEl.classList.add('bg-transparent');
     }
 
-    // ОБНОВЛЕНИЕ БЛОКА ОСТАЛОСЬ
     const leftEl = document.getElementById('orders-left');
     if (state.targetOrders !== null && state.targetOrders > 0) {
         const left = Math.max(0, state.targetOrders - state.sessionOrders.length);
@@ -294,13 +307,7 @@ function startTimer() {
     if (timerInterval) clearInterval(timerInterval);
     timerInterval = setInterval(() => {
         if (!state.isWorking || state.isPaused) return;
-        
-        const currentMs = state.totalWorkedMs + (Date.now() - state.lastResumeTime);
-        const h = Math.floor(currentMs / 3600000).toString().padStart(2, '0');
-        const m = Math.floor((currentMs % 3600000) / 60000).toString().padStart(2, '0');
-        const s = Math.floor((currentMs % 60000) / 1000).toString().padStart(2, '0');
-        
-        document.getElementById('session-timer').innerText = `${h}:${m}:${s}`;
+        document.getElementById('session-timer').innerText = formatTime(getCurrentMs());
         updateWorkUI(); 
     }, 1000);
 }
@@ -317,34 +324,31 @@ function stopTimer() {
     document.getElementById('current-orders-list').innerHTML = '';
 }
 
-function showSummaryModal(sess) {
-    const md = `| Дата | Чистыми | Время | Рейт |\n|---|---|---|---|\n| ${sess.date} | ${sess.netTotal} ₸ | ${sess.timeStr} | ${sess.rate} ₸/ч |`;
-    document.getElementById('export-text').value = md;
+function copySessionsMD() {
+    if (!state.pastSessions || state.pastSessions.length === 0) return;
+
+    let md = "| Дата | Чистыми | Время | Доставки | Рейт |\n|---|---|---|---|---|\n";
+    [...state.pastSessions].reverse().forEach(sess => {
+        const ordersStr = sess.orderCount !== undefined ? sess.orderCount : 0;
+        md += `| ${sess.date} | ${sess.netTotal} ₸ | ${sess.timeStr} | ${ordersStr} | ${sess.rate} ₸/ч |\n`;
+    });
     
-    const modal = document.getElementById('summary-modal');
-    modal.classList.remove('hidden');
-    void modal.offsetWidth; 
-    modal.classList.add('opacity-100');
-}
-
-function closeSummary() {
-    const modal = document.getElementById('summary-modal');
-    modal.classList.remove('opacity-100');
-    setTimeout(() => modal.classList.add('hidden'), 300);
-    document.getElementById('btn-copy').innerText = "КОПИРОВАТЬ";
-    document.getElementById('btn-copy').classList.replace('bg-green-600', 'bg-blue-600');
-}
-
-function copySummary() {
-    const textarea = document.getElementById('export-text');
+    const textarea = document.getElementById('hidden-copy-area');
+    textarea.value = md;
+    textarea.classList.remove('hidden');
     textarea.select();
     document.execCommand('copy');
-    const btn = document.getElementById('btn-copy');
-    btn.innerText = "СКОПИРОВАНО!";
-    btn.classList.replace('bg-blue-600', 'bg-green-600');
+    textarea.classList.add('hidden');
+    
+    const btn = document.getElementById('btn-copy-sessions');
+    btn.innerHTML = '<i class="fa-solid fa-check text-green-500 text-lg"></i>';
+    
+    setTimeout(() => {
+        btn.innerHTML = '<i class="fa-solid fa-copy text-lg"></i>';
+    }, 2000);
 }
 
-// --- СТРАНИЦА "ДАННЫЕ" ---
+// === ДАННЫЕ СМЕНЫ ===
 function openDataSection() {
     document.getElementById('section-data').classList.remove('hidden');
     document.getElementById('section-data').classList.add('flex');
@@ -366,30 +370,28 @@ function setTargetOrders(val) {
 
 function renderEditOrders() {
     const list = document.getElementById('data-orders-list');
-    list.innerHTML = '';
     
     if (state.sessionOrders.length === 0) {
         list.innerHTML = '<p class="text-neutral-500 text-center mt-10 text-sm">Нет заказов в текущей смене</p>';
         return;
     }
 
-    const reversedOrders = [...state.sessionOrders].reverse();
-    reversedOrders.forEach((order, index) => {
+    // Оптимизация
+    list.innerHTML = [...state.sessionOrders].reverse().map((order, index) => {
         const realIndex = state.sessionOrders.length - 1 - index;
-        const date = new Date(order.time);
-        const timeStr = date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        const timeStr = new Date(order.time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         
-        list.innerHTML += `
+        return `
             <div class="flex items-center gap-3 bg-neutral-900/50 p-3 rounded-xl border border-neutral-800">
                 <span class="text-neutral-500 font-mono text-xs w-6">#${state.sessionOrders.length - index}</span>
                 <span class="text-gray-400 text-xs w-10">${timeStr}</span>
                 <input type="number" value="${order.amount}" onchange="editOrder(${realIndex}, this.value)" class="flex-1 bg-neutral-800 text-white font-display font-bold p-2 rounded-lg text-right focus:ring-2 focus:ring-green-500 outline-none w-full" inputmode="numeric">
-                <button onclick="deleteOrder(${realIndex})" class="w-8 h-8 flex items-center justify-center text-red-500/50 hover:text-red-500 transition-colors">
+                <button onclick="deleteOrder(${realIndex})" class="w-8 h-8 flex items-center justify-center text-red-500/50 hover:text-red-500 transition-colors tap-effect">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </div>
         `;
-    });
+    }).join('');
 }
 
 function editOrder(realIndex, newVal) {
@@ -416,11 +418,16 @@ function deleteOrder(realIndex) {
     }
 }
 
-// --- ЛОГИКА РАСХОДОВ И СТАТУСА ---
+// === РАСХОДЫ И СТАТУС ===
 function selectCategory(catId, btnElement) {
-    selectedCategory = catId;
-    document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
-    btnElement.classList.add('active');
+    if (selectedCategory === catId) {
+        selectedCategory = null;
+        btnElement.classList.remove('active');
+    } else {
+        selectedCategory = catId;
+        document.querySelectorAll('.cat-btn').forEach(btn => btn.classList.remove('active'));
+        btnElement.classList.add('active');
+    }
 }
 
 function saveExpense() {
@@ -440,11 +447,8 @@ function saveExpense() {
     };
     
     state.expenses.unshift(expense); 
-    if (selectedCategory === 'credit') {
-        state.credit.monthlyPaid += amount;
-        state.credit.totalPaid += amount;
-    }
     saveState();
+    
     amountInput.value = '';
     itemInput.value = '';
     selectedCategory = null;
@@ -454,13 +458,14 @@ function saveExpense() {
 
 function updateStatusView() {
     const psList = document.getElementById('past-sessions-list');
-    psList.innerHTML = '';
+    
+    // Оптимизация
     if(!state.pastSessions || state.pastSessions.length === 0) {
         psList.innerHTML = '<p class="text-xs text-neutral-600">Нет завершенных смен</p>';
     } else {
-        [...state.pastSessions].reverse().forEach(sess => {
+        psList.innerHTML = [...state.pastSessions].reverse().map(sess => {
             const ordersStr = sess.orderCount !== undefined ? sess.orderCount : 0;
-            psList.innerHTML += `
+            return `
                 <div class="bg-neutral-900 p-4 rounded-2xl border border-neutral-800 flex justify-between items-center">
                     <div>
                         <div class="text-white font-bold font-display text-lg">${sess.netTotal} ₸</div>
@@ -469,51 +474,172 @@ function updateStatusView() {
                     <div class="text-green-500 font-mono text-sm font-bold bg-green-500/10 px-2 py-1 rounded-lg">${sess.rate} ₸/ч</div>
                 </div>
             `;
-        });
+        }).join('');
     }
 
-    const monthPct = Math.min((state.credit.monthlyPaid / state.credit.monthlyGoal) * 100, 100);
-    const totalPct = Math.min((state.credit.totalPaid / state.credit.totalDebt) * 100, 100);
-    document.getElementById('month-paid').innerText = state.credit.monthlyPaid.toLocaleString();
-    document.getElementById('bar-month').style.width = `${monthPct}%`;
-    document.getElementById('total-paid').innerText = state.credit.totalPaid.toLocaleString();
-    document.getElementById('total-debt-val').innerText = state.credit.totalDebt.toLocaleString();
-    document.getElementById('bar-total').style.width = `${totalPct}%`;
-    
     const list = document.getElementById('history-list');
-    list.innerHTML = '';
-    state.expenses.slice(0, 5).forEach(exp => {
-        const isCredit = exp.category === 'credit';
-        const map = { 'food': 'fa-burger', 'bike': 'fa-motorcycle', 'family': 'fa-house-chimney', 'credit': 'fa-file-invoice-dollar', 'subs': 'fa-wifi', 'other': 'fa-ghost' };
-        const iconClass = map[exp.category] || 'fa-circle';
-        
-        const html = `
-            <div class="flex justify-between items-center bg-neutral-900/50 p-3 rounded-xl border border-white/5">
-                <div class="flex items-center gap-3">
-                    <div class="w-8 h-8 rounded-full bg-neutral-800 flex items-center justify-center text-gray-400">
-                        <i class="fa-solid ${iconClass} text-xs"></i>
-                    </div>
-                    <div>
-                        <div class="text-white text-sm font-medium">${exp.item}</div>
-                        <div class="text-xs text-gray-500 capitalize">${exp.category}</div>
-                    </div>
+    
+    // Оптимизация
+    if (state.expenses.length === 0) {
+        list.innerHTML = '<tr><td colspan="3" class="p-4 text-xs text-neutral-600 text-center">Нет записанных трат</td></tr>';
+    } else {
+        list.innerHTML = state.expenses.slice(0, 20).map(exp => {
+            const catInfo = CATEGORY_MAP[exp.category] || CATEGORY_MAP['other'];
+            return `
+                <tr class="transition-colors hover:bg-white/5">
+                    <td class="p-3 text-center align-middle">
+                        <div class="w-8 h-8 rounded-full bg-neutral-800 inline-flex items-center justify-center text-gray-400" title="${catInfo.label}">
+                            <i class="fa-solid ${catInfo.icon} text-xs"></i>
+                        </div>
+                    </td>
+                    <td class="p-3 align-middle overflow-hidden">
+                        <div class="text-white text-sm font-medium break-words whitespace-normal line-clamp-3">${exp.item}</div>
+                    </td>
+                    <td class="p-3 text-right align-middle">
+                        <div class="font-display font-bold text-white whitespace-nowrap">
+                            -${exp.amount}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
+}
+
+// === РЕДАКТОР ТРАТ ===
+function openExpensesEdit() {
+    document.getElementById('section-expenses-edit').classList.remove('hidden');
+    document.getElementById('section-expenses-edit').classList.add('flex');
+    renderExpensesEditList();
+}
+
+function closeExpensesEdit() {
+    document.getElementById('section-expenses-edit').classList.add('hidden');
+    document.getElementById('section-expenses-edit').classList.remove('flex');
+    
+    const copyBtn = document.getElementById('btn-copy-md');
+    copyBtn.innerHTML = '<i class="fa-solid fa-copy"></i>';
+    copyBtn.classList.remove('text-green-500');
+    copyBtn.classList.add('text-white');
+}
+
+function renderExpensesEditList() {
+    const list = document.getElementById('expenses-edit-list');
+    
+    if (state.expenses.length === 0) {
+        list.innerHTML = '<p class="text-neutral-500 text-center mt-10 text-sm">Траты пусты</p>';
+        return;
+    }
+
+    // Оптимизация
+    list.innerHTML = state.expenses.map((exp, index) => {
+        const catInfo = CATEGORY_MAP[exp.category] || CATEGORY_MAP['other'];
+        return `
+            <div class="grid grid-cols-[auto_1fr_auto_auto] gap-2 items-center bg-neutral-900/60 p-3 rounded-xl border border-neutral-800">
+                <div class="w-6 flex justify-center text-gray-400" title="${catInfo.label}">
+                    <i class="fa-solid ${catInfo.icon} text-sm"></i>
                 </div>
-                <div class="font-display font-bold ${isCredit ? 'text-green-400' : 'text-white'}">
-                    ${isCredit ? '+' : '-'}${exp.amount}
-                </div>
+                <input type="text" value="${exp.item}" onchange="editExpenseItem(${index}, this.value)" class="bg-transparent text-white text-xs w-full outline-none border-b border-transparent focus:border-green-500/50 transition-colors pb-1">
+                <input type="number" value="${exp.amount}" onchange="editExpenseAmount(${index}, this.value)" class="bg-transparent text-white font-display font-bold text-right w-16 outline-none border-b border-transparent focus:border-green-500/50 transition-colors pb-1" inputmode="numeric">
+                <button onclick="deleteExpense(${index})" class="text-red-500/50 hover:text-red-500 w-6 flex justify-center items-center tap-effect">
+                    <i class="fa-solid fa-trash text-sm"></i>
+                </button>
             </div>
         `;
-        list.innerHTML += html;
-    });
+    }).join('');
 }
 
-function clearAllData() {
-    if(confirm("Точно удалить все данные? Это необратимо.")) {
-        localStorage.removeItem('findel_v1');
-        location.reload();
+function editExpenseItem(index, val) {
+    if (state.expenses[index]) {
+        state.expenses[index].item = val;
+        saveState();
+        updateStatusView();
     }
 }
 
+function editExpenseAmount(index, val) {
+    const num = parseInt(val);
+    if (state.expenses[index] && !isNaN(num) && num > 0) {
+        state.expenses[index].amount = num;
+        saveState();
+        updateStatusView();
+    }
+}
+
+function deleteExpense(index) {
+    if(confirm("Удалить эту трату?")) {
+        state.expenses.splice(index, 1);
+        saveState();
+        updateStatusView();
+        renderExpensesEditList();
+    }
+}
+
+function copyExpensesMD() {
+    let md = "| Категория | Комментарий | Сумма |\n|---|---|---|\n";
+    state.expenses.forEach(exp => {
+        const catInfo = CATEGORY_MAP[exp.category] || CATEGORY_MAP['other'];
+        md += `| ${catInfo.label} | ${exp.item || '-'} | ${exp.amount} ₸ |\n`;
+    });
+    
+    const textarea = document.getElementById('hidden-copy-area');
+    textarea.value = md;
+    textarea.classList.remove('hidden');
+    textarea.select();
+    document.execCommand('copy');
+    textarea.classList.add('hidden');
+    
+    const btn = document.getElementById('btn-copy-md');
+    btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+    btn.classList.remove('text-white');
+    btn.classList.add('text-green-500');
+    
+    setTimeout(() => {
+        btn.innerHTML = '<i class="fa-solid fa-copy"></i>';
+        btn.classList.remove('text-green-500');
+        btn.classList.add('text-white');
+    }, 2000);
+}
+
+// === УПРАВЛЕНИЕ ДАННЫМИ (СБРОС) ===
+function toggleResetMenu() {
+    const menu = document.getElementById('reset-menu');
+    menu.classList.toggle('hidden');
+    menu.classList.toggle('flex');
+}
+
+function requestReset(type) {
+    pendingResetType = type;
+    const modal = document.getElementById('confirm-modal');
+    modal.classList.remove('hidden');
+    void modal.offsetWidth; 
+    modal.classList.add('opacity-100');
+}
+
+function closeConfirmModal() {
+    const modal = document.getElementById('confirm-modal');
+    modal.classList.remove('opacity-100');
+    setTimeout(() => modal.classList.add('hidden'), 300);
+    pendingResetType = null;
+}
+
+function executeReset() {
+    if (pendingResetType === 'sessions') {
+        state.pastSessions = [];
+    } else if (pendingResetType === 'expenses') {
+        state.expenses = [];
+    }
+    
+    saveState();
+    updateStatusView();
+    closeConfirmModal();
+    
+    const menu = document.getElementById('reset-menu');
+    menu.classList.add('hidden');
+    menu.classList.remove('flex');
+}
+
+// === ИНИЦИАЛИЗАЦИЯ ===
 function init() {
     setInterval(() => {
         const now = new Date();

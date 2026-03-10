@@ -39,10 +39,8 @@
         
         <!-- SECTION: WORK (DELIVERY) -->
         <section id="section-work" class="h-full flex flex-col px-5 fade-in w-full">
-            
             <div class="flex-1 overflow-y-auto no-scrollbar w-full flex flex-col pb-4">
                 
-                <!-- Stats Card -->
                 <div class="p-5 rounded-3xl bg-neutral-900 border border-neutral-800 text-center shadow-lg relative overflow-hidden shrink-0 mt-4">
                     <div id="rate-glow" class="absolute inset-0 opacity-10 blur-xl transition-colors duration-500 bg-transparent"></div>
                     
@@ -59,7 +57,6 @@
                                 <div id="session-timer" class="font-mono text-xl text-white">00:00:00</div>
                             </div>
                             
-                            <!-- НОВЫЙ БЛОК: ОСТАЛОСЬ -->
                             <div class="text-center">
                                 <div class="text-xs text-gray-500 uppercase">Осталось</div>
                                 <div id="orders-left" class="font-mono text-xl text-white">~</div>
@@ -73,7 +70,6 @@
                     </div>
                 </div>
 
-                <!-- Swipe and Actions -->
                 <div class="mt-6 w-full shrink-0 flex flex-col gap-3">
                     <div id="action-buttons" class="flex gap-3 w-full">
                         <button id="btn-pause" onclick="togglePause()" class="w-16 h-14 shrink-0 rounded-2xl bg-neutral-900 border border-neutral-800 flex items-center justify-center transition-colors tap-effect">
@@ -114,29 +110,37 @@
             </div>
 
             <div class="grid grid-cols-2 gap-3 mb-6 shrink-0">
-                <button onclick="selectCategory('food', this)" class="cat-btn tap-effect p-4 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group group-[.active]:border-orange-500 group-[.active]:bg-neutral-800 transition-colors">
-                    <i class="fa-solid fa-burger text-2xl text-gray-400 group-[.active]:text-orange-400"></i>
-                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-white">Еда</span>
+                <button onclick="selectCategory('groceries', this)" class="cat-btn tap-effect p-3 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group [&.active]:border-white [&.active]:bg-white transition-colors">
+                    <i class="fa-solid fa-basket-shopping text-2xl text-gray-400 group-[.active]:text-black"></i>
+                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-black text-center leading-tight">Продукты</span>
                 </button>
-                <button onclick="selectCategory('bike', this)" class="cat-btn tap-effect p-4 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group group-[.active]:border-blue-500 group-[.active]:bg-neutral-800 transition-colors">
-                    <i class="fa-solid fa-motorcycle text-2xl text-gray-400 group-[.active]:text-blue-400"></i>
-                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-white">Байк</span>
+                <button onclick="selectCategory('family', this)" class="cat-btn tap-effect p-3 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group [&.active]:border-white [&.active]:bg-white transition-colors">
+                    <i class="fa-solid fa-people-roof text-2xl text-gray-400 group-[.active]:text-black"></i>
+                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-black text-center leading-tight">Семья</span>
                 </button>
-                <button onclick="selectCategory('family', this)" class="cat-btn tap-effect p-4 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group group-[.active]:border-purple-500 group-[.active]:bg-neutral-800 transition-colors">
-                    <i class="fa-solid fa-house-chimney text-2xl text-gray-400 group-[.active]:text-purple-400"></i>
-                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-white">Дом/Семья</span>
+                <button onclick="selectCategory('courier', this)" class="cat-btn tap-effect p-3 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group [&.active]:border-white [&.active]:bg-white transition-colors">
+                    <i class="fa-solid fa-box text-2xl text-gray-400 group-[.active]:text-black"></i>
+                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-black text-center leading-tight">Курьерка</span>
                 </button>
-                <button onclick="selectCategory('credit', this)" class="cat-btn tap-effect p-4 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group group-[.active]:border-red-500 group-[.active]:bg-neutral-800 transition-colors">
-                    <i class="fa-solid fa-file-invoice-dollar text-2xl text-gray-400 group-[.active]:text-red-400"></i>
-                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-white">Кредит</span>
+                <button onclick="selectCategory('subs', this)" class="cat-btn tap-effect p-3 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group [&.active]:border-white [&.active]:bg-white transition-colors">
+                    <i class="fa-solid fa-rotate-right text-2xl text-gray-400 group-[.active]:text-black"></i>
+                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-black text-center leading-tight">Подписки</span>
                 </button>
-                <button onclick="selectCategory('other', this)" class="cat-btn tap-effect p-4 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group group-[.active]:border-gray-500 group-[.active]:bg-neutral-800 transition-colors">
-                    <i class="fa-solid fa-ghost text-2xl text-gray-400 group-[.active]:text-gray-200"></i>
-                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-white">Хаос</span>
+                <button onclick="selectCategory('force_majeure', this)" class="cat-btn tap-effect p-3 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group [&.active]:border-white [&.active]:bg-white transition-colors">
+                    <i class="fa-solid fa-triangle-exclamation text-2xl text-gray-400 group-[.active]:text-black"></i>
+                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-black text-center leading-tight">Форс-мажор</span>
                 </button>
-                 <button onclick="selectCategory('subs', this)" class="cat-btn tap-effect p-4 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group group-[.active]:border-pink-500 group-[.active]:bg-neutral-800 transition-colors">
-                    <i class="fa-solid fa-wifi text-2xl text-gray-400 group-[.active]:text-pink-400"></i>
-                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-white">Связь</span>
+                <button onclick="selectCategory('transport', this)" class="cat-btn tap-effect p-3 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group [&.active]:border-white [&.active]:bg-white transition-colors">
+                    <i class="fa-solid fa-car text-2xl text-gray-400 group-[.active]:text-black"></i>
+                    <span class="text-xs font-medium text-gray-400 group-[.active]:text-black text-center leading-tight">Транспорт</span>
+                </button>
+                <button onclick="selectCategory('charity', this)" class="cat-btn tap-effect p-3 bg-neutral-900 rounded-2xl border border-neutral-800 flex flex-col items-center gap-2 group [&.active]:border-white [&.active]:bg-white transition-colors">
+                    <i class="fa-solid fa-cat text-2xl text-gray-400 group-[.active]:text-black"></i>
+                    <span class="text-[10px] sm:text-xs font-medium text-gray-400 group-[.active]:text-black text-center leading-tight">Благотворительность</span>
+                </button>
+                <button class="cat-btn p-3 bg-neutral-900/50 rounded-2xl border border-neutral-800/50 flex flex-col items-center gap-2 opacity-30 pointer-events-none">
+                    <i class="fa-solid fa-file-invoice-dollar text-2xl text-gray-500"></i>
+                    <span class="text-xs font-medium text-gray-500 text-center leading-tight">Кредит</span>
                 </button>
             </div>
 
@@ -148,39 +152,47 @@
             </div>
         </section>
 
-        <!-- SECTION: STATUS (CREDIT & HISTORY) -->
+        <!-- SECTION: STATUS (HISTORY) -->
         <section id="section-status" class="hidden h-full px-5 fade-in overflow-y-auto pb-20 w-full">
-            <h2 class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4 mt-6">Завершенные смены</h2>
+            <div class="flex items-center justify-between mb-4 mt-6">
+                <h2 class="text-gray-500 text-xs font-bold uppercase tracking-widest">Завершенные смены</h2>
+                <button id="btn-copy-sessions" onclick="copySessionsMD()" class="text-gray-400 p-2 tap-effect hover:text-white transition-colors" title="Копировать статистику смен">
+                    <i class="fa-solid fa-copy text-lg"></i>
+                </button>
+            </div>
             <div id="past-sessions-list" class="space-y-3 mb-8"></div>
 
-            <h2 class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">Прогресс Босса</h2>
+            <div class="flex items-center justify-between mb-4 mt-8">
+                <h2 class="text-gray-500 text-xs font-bold uppercase tracking-widest">История трат</h2>
+                <button onclick="openExpensesEdit()" class="text-gray-400 p-2 tap-effect hover:text-white transition-colors" title="Редактировать траты">
+                    <i class="fa-solid fa-gear text-lg"></i>
+                </button>
+            </div>
             
-            <div class="bg-neutral-900 p-5 rounded-2xl border border-neutral-800 mb-4 relative overflow-hidden">
-                <div class="flex justify-between items-end mb-2 relative z-10">
-                    <span class="text-white font-medium">Платеж (Месяц)</span>
-                    <span class="text-orange-400 font-mono"><span id="month-paid">0</span> / 120 000</span>
-                </div>
-                <div class="w-full h-3 bg-neutral-800 rounded-full overflow-hidden relative z-10">
-                    <div id="bar-month" class="h-full bg-orange-500 transition-all duration-1000" style="width: 0%"></div>
+            <div class="bg-neutral-900/50 rounded-2xl border border-white/5 overflow-hidden">
+                <table class="w-full text-left table-fixed">
+                    <thead class="bg-neutral-800/50 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-white/5">
+                        <tr>
+                            <th class="p-3 w-12 text-center">Кат.</th>
+                            <th class="p-3">Комментарий</th>
+                            <th class="p-3 w-[72px] text-right">Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-list" class="divide-y divide-white/5">
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="mt-10 mb-6 flex flex-col items-center">
+                <button onclick="toggleResetMenu()" class="w-full py-3 rounded-xl border border-neutral-800 text-gray-400 text-xs uppercase tracking-widest hover:bg-neutral-800 transition-colors">
+                    СБРОС ДАННЫХ
+                </button>
+                
+                <div id="reset-menu" class="hidden w-full flex-col gap-2 mt-3">
+                    <button onclick="requestReset('sessions')" class="w-full py-3 rounded-xl bg-red-950/20 border border-red-900/30 text-red-500 text-xs uppercase tracking-widest tap-effect">Сброс завершенных смен</button>
+                    <button onclick="requestReset('expenses')" class="w-full py-3 rounded-xl bg-red-950/20 border border-red-900/30 text-red-500 text-xs uppercase tracking-widest tap-effect">Сброс трат</button>
                 </div>
             </div>
-
-            <div class="bg-neutral-900 p-5 rounded-2xl border border-neutral-800 mb-8 relative overflow-hidden">
-                <div class="flex justify-between items-end mb-2 relative z-10">
-                    <span class="text-white font-medium">Полный долг</span>
-                    <span class="text-red-400 font-mono"><span id="total-paid">0</span> / <span id="total-debt-val">2 000 000</span></span>
-                </div>
-                <div class="w-full h-3 bg-neutral-800 rounded-full overflow-hidden relative z-10">
-                    <div id="bar-total" class="h-full bg-white-600 transition-all duration-1000" style="width: 0%"></div>
-                </div>
-            </div>
-
-            <h2 class="text-gray-500 text-xs font-bold uppercase tracking-widest mb-4">История трат (Последние 5)</h2>
-            <div id="history-list" class="space-y-3"></div>
-            
-             <button onclick="clearAllData()" class="mt-10 w-full py-3 rounded-xl border border-red-900/30 text-red-700 text-xs uppercase tracking-widest hover:bg-red-900/10">
-                Сброс данных (Осторожно)
-            </button>
         </section>
     </main>
 
@@ -194,29 +206,47 @@
             <div class="w-8"></div>
         </div>
         
-        <!-- НОВЫЙ БЛОК ДЛЯ ВВОДА ЦЕЛИ -->
         <div class="mb-6 flex items-center justify-between bg-neutral-900 p-4 rounded-xl border border-neutral-800 shrink-0">
             <span class="text-gray-400 text-sm font-medium">Цель по заказам:</span>
             <input type="number" id="target-orders-input" placeholder="~" class="w-20 bg-neutral-800 text-white text-center font-display p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 border border-neutral-700" onchange="setTargetOrders(this.value)" inputmode="numeric">
         </div>
 
-        <div id="data-orders-list" class="flex-1 overflow-y-auto no-scrollbar space-y-3 pb-6">
-            <!-- Инпуты с заказами -->
-        </div>
+        <div id="data-orders-list" class="flex-1 overflow-y-auto no-scrollbar space-y-3 pb-6"></div>
     </div>
 
-    <!-- === MODAL: ИТОГ СМЕНЫ === -->
-    <div id="summary-modal" class="hidden fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-5 opacity-0 transition-opacity duration-300">
-        <div class="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4 relative">
-            <h3 class="text-white font-bold text-lg text-center">Смена завершена</h3>
-            <textarea id="export-text" class="w-full bg-black text-gray-300 p-4 rounded-xl font-mono text-xs h-32 resize-none focus:outline-none border border-neutral-800" readonly></textarea>
-            
+    <!-- === SECTION: РЕДАКТОР ТРАТ === -->
+    <div id="section-expenses-edit" class="hidden fixed inset-0 bg-black z-[80] flex-col overflow-y-auto w-full h-full pb-20 pt-8 px-4 fade-in">
+        <div class="flex items-center justify-between mb-6 shrink-0">
+            <button onclick="closeExpensesEdit()" class="text-white text-2xl tap-effect p-2 -ml-2">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <h2 class="text-white font-display font-bold text-lg tracking-widest">РЕДАКТОР ТРАТ</h2>
+            <button id="btn-copy-md" onclick="copyExpensesMD()" class="text-white text-xl tap-effect p-2" title="Копировать MD">
+                <i class="fa-solid fa-copy"></i>
+            </button>
+        </div>
+
+        <div class="grid grid-cols-[auto_1fr_auto_auto] gap-3 text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-neutral-800 pb-2 mb-3 px-2 shrink-0">
+            <div class="w-6 text-center">Кат.</div>
+            <div>Комментарий</div>
+            <div class="text-right w-16">Сумма</div>
+            <div class="w-6 text-center">Удал.</div>
+        </div>
+
+        <div id="expenses-edit-list" class="flex-1 overflow-y-auto no-scrollbar space-y-2 pb-6"></div>
+    </div>
+
+    <!-- === MODAL: CONFIRM RESET === -->
+    <div id="confirm-modal" class="hidden fixed inset-0 bg-black/90 z-[110] flex items-center justify-center p-5 opacity-0 transition-opacity duration-300">
+        <div class="bg-neutral-900 border border-neutral-800 rounded-3xl p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4 text-center">
+            <h3 class="text-white font-bold text-xl mb-1">Вы уверены?</h3>
+            <p class="text-gray-400 text-sm mb-4">Это действие нельзя отменить.</p>
             <div class="flex gap-2">
-                <button onclick="closeSummary()" class="flex-1 py-3 rounded-xl bg-neutral-800 text-gray-400 font-bold text-sm tracking-widest uppercase">
-                    ЗАКРЫТЬ
+                <button onclick="closeConfirmModal()" class="flex-1 py-3 rounded-xl bg-neutral-800 text-gray-300 font-bold text-sm tracking-widest uppercase tap-effect">
+                    ОТМЕНА
                 </button>
-                <button id="btn-copy" onclick="copySummary()" class="flex-1 py-3 rounded-xl bg-green-600 text-white font-bold text-sm tracking-widest uppercase transition-colors">
-                    КОПИРОВАТЬ
+                <button onclick="executeReset()" class="flex-1 py-3 rounded-xl bg-red-600 text-white font-bold text-sm tracking-widest uppercase tap-effect shadow-lg shadow-red-900/20">
+                    УДАЛИТЬ
                 </button>
             </div>
         </div>
@@ -237,6 +267,9 @@
             <span class="text-[10px] font-bold">STATUS</span>
         </button>
     </nav>
+
+    <!-- Скрытая textarea для копирования в буфер -->
+    <textarea id="hidden-copy-area" class="hidden"></textarea>
 
     <script>
         //server worker
